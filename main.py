@@ -89,6 +89,7 @@ X = pd.get_dummies(X_raw, columns=['จังหวัด', 'เกรดโค�
 X_train, _, y_train, _ = train_test_split(X, y_ratio, test_size=0.2, random_state=42)
 model = MultiOutputRegressor(RandomForestRegressor(n_estimators=100, random_state=42)).fit(X_train, y_train)
 avg_ซอยต่อหลัง = df.groupby('เกรดโครงการ')['หลังต่อซอย'].mean().to_dict()
+grouped_ratio = df.groupby('เกรดโครงการ')[['%ทาวโฮม', '%บ้านแฝด', '%บ้านเดี่ยว2ชั้น', 'อาคารพาณิชย์']].mean()
 
 # -------------------- FORM --------------------
 st.markdown("## 📋 กรอกข้อมูลโครงการ")
@@ -118,6 +119,10 @@ if submitted:
     พท_ขาย_twa = พท_ขาย / 4
 
     สัดส่วน = np.clip(pred[4:8], 0.05, 0.7)
+    if เกรด in grouped_ratio.index:
+        historic_ratio = grouped_ratio.loc[เกรด].values
+        historic_ratio = historic_ratio / (sum(historic_ratio) or 1)
+        สัดส่วน = (np.array(สัดส่วน) * 0.3 + historic_ratio * 0.7)
     รวม = sum(สัดส่วน) or 1
     ratio = [x / รวม for x in สัดส่วน]
 
@@ -150,4 +155,5 @@ if submitted:
 
 st.markdown("---")
 st.caption("Developed by mmethaa | Smart Layout AI 🚀")
+
 
