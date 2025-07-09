@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.model_selection import train_test_split
@@ -65,11 +66,8 @@ LOT_SIZES = {
 df = pd.read_excel("data update.xlsx")
 df.columns = df.columns.str.strip()
 
-# ✅ คำนวณฟีเจอร์
 df['หลังต่อซอย'] = df['จำนวนหลัง'] / df['จำนวนซอย'].replace(0, 1)
 df['%บ้านเดี่ยว2ชั้น'] = df['บ้านเดี่ยว2ชั้น'] / df['จำนวนหลัง'].replace(0, 1)
-if '%บ้านเดี่ยว' in df.columns:
-    df = df.drop(columns=['%บ้านเดี่ยว'])
 df['%บ้านแฝด'] = df['บ้านแฝด'] / df['จำนวนหลัง'].replace(0, 1)
 df['%ทาวโฮม'] = df['ทาวโฮม'] / df['จำนวนหลัง'].replace(0, 1)
 df['%พื้นที่ขาย'] = df['พื้นที่จัดจำหน่าย(ตรม)'] / df['พื้นที่โครงการ(ตรม)']
@@ -119,7 +117,7 @@ if submitted:
     พท_สวน = pred[2] * area
     พท_ขาย_twa = พท_ขาย / 4
 
-    สัดส่วน = pred[4:8]
+    สัดส่วน = np.clip(pred[4:8], 0.05, 0.7)
     รวม = sum(สัดส่วน) or 1
     ratio = [x / รวม for x in สัดส่วน]
 
@@ -152,3 +150,4 @@ if submitted:
 
 st.markdown("---")
 st.caption("Developed by mmethaa | Smart Layout AI 🚀")
+
