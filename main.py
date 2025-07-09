@@ -60,7 +60,7 @@ def optimize_lot_count(total_area, ratio, min_lot_size, max_lot_size, enforce_ev
 LOT_SIZES = {
     "ทาวน์โฮม": (20.08, 45.84),
     "บ้านแฝด": (47, 70),
-    "บ้านเดี่ยว": (60, 160),
+    "บ้านเดี่ยว2ชั้น": (60, 160),
     "อาคารพาณิชย์": (20, 40)
 }
 
