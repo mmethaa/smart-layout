@@ -38,9 +38,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------- LOAD DATA --------------------
-data_path = "data update.xlsx"
+data_path = "data update (2).xlsx"
 if not os.path.exists(data_path):
-    st.error("ไม่พบไฟล์ข้อมูล 'data update.xlsx'")
+    st.error("ไม่พบไฟล์ข้อมูล 'data update (2).xlsx'")
     st.stop()
 
 df = pd.read_excel(data_path)
@@ -117,7 +117,6 @@ if submitted:
     บ้านเดี่ยว2 = หลังรวม * pred[6] / รวมสัดส่วน
     บ้านเดี่ยว3 = หลังรวม * pred[7] / รวมสัดส่วน
 
-    # เงื่อนไขกรณีเกรดโครงการ
     if เกรด not in ["ELEGANCE", "GRANDESSENCE", "ESSENCE"]:
         บ้านเดี่ยว3 = 0
         บ้านเดี่ยว2 = หลังรวม - (ทาวโฮม + บ้านแฝด)
