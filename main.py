@@ -6,7 +6,7 @@ from sklearn.model_selection import train_test_split
 import os
 
 # -------------------- CONFIG --------------------
-st.set_page_config(page_title="Smart Layout AI", page_icon="🏗️", layout="centered")
+st.set_page_config(page_title="Smart Layout AI", page_icon="🎗️", layout="centered")
 
 # -------------------- STYLING --------------------
 st.markdown("""
@@ -88,7 +88,7 @@ with st.form("input_form"):
         จังหวัด = st.selectbox("📍 จังหวัด", sorted(df['จังหวัด'].dropna().unique()))
         รูปร่าง = st.selectbox("🦡️ รูปร่างที่ดิน", sorted(df['รูปร่างที่ดิน'].dropna().unique()))
     with col2:
-        เกรด = st.selectbox("🏧 เกรดโครงการ", sorted(df['เกรดโครงการ'].dropna().unique()))
+        เกรด = st.selectbox("🏮 เกรดโครงการ", sorted(df['เกรดโครงการ'].dropna().unique()))
         พื้นที่ = st.number_input("📀 พื้นที่โครงการ (ตร.ม.)", min_value=1000, value=30000, step=500)
     submitted = st.form_submit_button("🚀 เริ่มพยากรณ์")
 
@@ -138,3 +138,4 @@ if submitted:
 
 st.markdown("---")
 st.caption("Developed by mmethaa | Smart Layout AI 🚀")
+
