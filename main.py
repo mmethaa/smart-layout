@@ -38,7 +38,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------- LOAD DATA --------------------
-data_path = "data update.xlsx"
+data_path = "data update (2).xlsx"
 if not os.path.exists(data_path):
     st.error("ไม่พบไฟล์ข้อมูล 'data update.xlsx'")
     st.stop()
