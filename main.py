@@ -62,13 +62,28 @@ model = MultiOutputRegressor(RandomForestRegressor(n_estimators=100, random_stat
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 
-# Evaluate accuracy
+# Evaluate accuracy (fixed)
 accuracy_table = pd.DataFrame(columns=['พารามิเตอร์', 'Accuracy (%)'])
+
 for i, col in enumerate(y_ratio.columns):
-    mape = mean_absolute_percentage_error(y_test.iloc[:, i], y_pred[:, i])
-    acc = 100 - (mape * 100)
-    accuracy_table.loc[len(accuracy_table)] = [col, round(acc, 2)]
+    y_true = y_test.iloc[:, i]
+    y_pred_col = y_pred[:, i]
+
+    mask = y_true != 0
+    if mask.sum() == 0:
+        acc = None
+    else:
+        mape = mean_absolute_percentage_error(y_true[mask], y_pred_col[mask])
+        acc = 100 - (mape * 100)
+
+    accuracy_table.loc[len(accuracy_table)] = [col, round(acc, 2) if acc is not None else "N/A"]
 
 # Show table
 st.dataframe(accuracy_table, use_container_width=True)
 st.caption("*ความแม่นยำเทียบกับข้อมูลโครงการจริงที่ถือเป็น Best Practice 100%")
+
+# Optional: Show example prediction
+st.markdown("---")
+st.markdown("### 🔮 ตัวอย่างค่าที่โมเดลคาดการณ์ได้")
+st.dataframe(pd.DataFrame(y_pred, columns=y_ratio.columns).round(4).head(10), use_container_width=True)
+
