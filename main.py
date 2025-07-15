@@ -62,7 +62,7 @@ model = MultiOutputRegressor(RandomForestRegressor(n_estimators=100, random_stat
 model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 
-# Evaluate accuracy (fixed)
+# Evaluate accuracy
 accuracy_table = pd.DataFrame(columns=['พารามิเตอร์', 'Accuracy (%)'])
 
 for i, col in enumerate(y_ratio.columns):
@@ -78,12 +78,39 @@ for i, col in enumerate(y_ratio.columns):
 
     accuracy_table.loc[len(accuracy_table)] = [col, round(acc, 2) if acc is not None else "N/A"]
 
-# Show table
 st.dataframe(accuracy_table, use_container_width=True)
 st.caption("*ความแม่นยำเทียบกับข้อมูลโครงการจริงที่ถือเป็น Best Practice 100%")
 
-# Optional: Show example prediction
+# Show example prediction
 st.markdown("---")
 st.markdown("### 🔮 ตัวอย่างค่าที่โมเดลคาดการณ์ได้")
 st.dataframe(pd.DataFrame(y_pred, columns=y_ratio.columns).round(4).head(10), use_container_width=True)
 
+# -------------------- USER INPUT FOR PREDICTION --------------------
+st.markdown("---")
+st.markdown("## ✏️ พยากรณ์จากข้อมูลของคุณ")
+
+col1, col2 = st.columns(2)
+จังหวัด_input = col1.selectbox("จังหวัด", sorted(df['จังหวัด'].unique()))
+เกรด_input = col1.selectbox("เกรดโครงการ", sorted(df['เกรดโครงการ'].unique()))
+รูปร่าง_input = col2.selectbox("รูปร่างที่ดิน", sorted(df['รูปร่างที่ดิน'].unique()))
+พื้นที่_input = col2.number_input("พื้นที่โครงการ (ตรม)", min_value=1, value=10000)
+
+if st.button("🔍 พยากรณ์ผลลัพธ์"):
+    input_df = pd.DataFrame.from_dict({
+        'จังหวัด': [จังหวัด_input],
+        'เกรดโครงการ': [เกรด_input],
+        'พื้นที่โครงการ(ตรม)': [พื้นที่_input],
+        'รูปร่างที่ดิน': [รูปร่าง_input]
+    })
+    input_encoded = pd.get_dummies(input_df)
+
+    for col in X.columns:
+        if col not in input_encoded.columns:
+            input_encoded[col] = 0
+    input_encoded = input_encoded[X.columns]
+
+    y_out = model.predict(input_encoded)[0]
+    results = pd.Series(y_out, index=y_ratio.columns)
+    st.markdown("### ✅ ผลลัพธ์ที่คาดการณ์")
+    st.dataframe(results.round(4))
