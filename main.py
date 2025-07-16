@@ -206,5 +206,16 @@ if submitted:
             st.metric("ความแม่นยำจำนวนซอย", f"{100 - avg_error['err_ซอย']:.2f} %")
     else:
         st.info("🔍 ไม่พบโครงการที่ใกล้เคียงในอดีตเพียงพอสำหรับประเมินความแม่นยำ")
+from sklearn.metrics import mean_absolute_error, r2_score
+
+# หลัง train model เสร็จ:
+y_pred = model.predict(X_train)
+
+mae = mean_absolute_error(y_train, y_pred)
+r2 = r2_score(y_train, y_pred)
+
+st.markdown("### 📈 ความแม่นยำของโมเดล (Train Set)")
+st.write(f"**MAE (Mean Absolute Error):** {mae:.4f}")
+st.write(f"**R² Score:** {r2:.4f}")
 
 st.caption("Developed by mmethaa | Smart Layout AI 🚀")
