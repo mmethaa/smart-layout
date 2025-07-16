@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_percentage_error
+import numpy as np
 import os
 
 # -------------------- CONFIG --------------------
@@ -70,12 +71,14 @@ for i, col in enumerate(y_ratio.columns):
 
     mask = y_true != 0
     if mask.sum() == 0:
-        acc = None
+        acc = np.nan
     else:
         mape = mean_absolute_percentage_error(y_true[mask], y_pred_col[mask])
         acc = 100 - (mape * 100)
 
-    accuracy_table.loc[len(accuracy_table)] = [col, round(acc, 2) if acc is not None else "N/A"]
+    accuracy_table.loc[len(accuracy_table)] = [col, acc]
+
+accuracy_table['Accuracy (%)'] = pd.to_numeric(accuracy_table['Accuracy (%)'], errors='coerce').round(2)
 
 st.dataframe(accuracy_table, use_container_width=True)
 st.caption("*ความแม่นยำเทียบกับข้อมูลโครงการจริงที่ถือเป็น Best Practice 100%")
