@@ -169,49 +169,54 @@ if submitted:
     st.markdown("### 📈 ความแม่นยำของโมเดล (Train Set)")
     st.write(f"**MAE (Mean Absolute Error):** {mae:.4f}")
     st.write(f"**R² Score:** {r2:.4f}")
-with st.expander("🔎 ค้นหาโครงการรอบข้าง (ทดลองใช้งาน)"):
-    st.markdown("### 🗺️ คลิกเลือกพื้นที่บนแผนที่เพื่อค้นหาอาคารโดยรอบ")
+with st.expander("🔎 ค้นหาโครงการใกล้เคียงจากชื่อพื้นที่"):
+    st.markdown("### 📍 กรอกชื่อพื้นที่ (เช่น: สามเสนใน พญาไท กรุงเทพฯ)")
+    location_input = st.text_input("🗺️ พื้นที่สำหรับค้นหา", value="สามเสนใน พญาไท กรุงเทพ")
 
-    import folium
-    from streamlit_folium import st_folium
-    import requests
+    if st.button("📡 ค้นหาโครงการใกล้เคียง"):
+        # ====== แปลงชื่อเป็นพิกัด (Geocoding)
+        geocode_url = f"https://nominatim.openstreetmap.org/search"
+        geocode_params = {
+            'q': location_input,
+            'format': 'json',
+            'limit': 1
+        }
+        geo_res = requests.get(geocode_url, params=geocode_params)
+        if geo_res.ok and geo_res.json():
+            lat = float(geo_res.json()[0]['lat'])
+            lon = float(geo_res.json()[0]['lon'])
 
-    default_lat, default_lon = 13.7563, 100.5018
-    m = folium.Map(location=[default_lat, default_lon], zoom_start=13)
-    folium.Marker([default_lat, default_lon], tooltip="เริ่มต้นที่นี่").add_to(m)
-    map_data = st_folium(m, height=500, width=700)
+            # ====== ค้นหาอาคารจาก Overpass API
+            radius = 5000  # 5 กม.
+            query = f"""
+            [out:json];
+            (
+              node["building"](around:{radius},{lat},{lon});
+              way["building"](around:{radius},{lat},{lon});
+              relation["building"](around:{radius},{lat},{lon});
+            );
+            out center 30;
+            """
+            osm_url = "https://overpass-api.de/api/interpreter"
+            osm_res = requests.get(osm_url, params={'data': query})
 
-    if map_data.get("last_clicked"):
-        lat = map_data["last_clicked"]["lat"]
-        lon = map_data["last_clicked"]["lng"]
-        st.success(f"📍 พิกัดที่เลือก: {lat:.5f}, {lon:.5f}")
+            if osm_res.ok:
+                data = osm_res.json().get("elements", [])
+                named_places = [
+                    (e.get('tags', {}).get('name'),
+                     e.get('lat') or e.get('center', {}).get('lat'),
+                     e.get('lon') or e.get('center', {}).get('lon'))
+                    for e in data if 'name' in e.get('tags', {})
+                ]
 
-        radius = 5000
-        query = f"""
-        [out:json];
-        (
-          node["building"](around:{radius},{lat},{lon});
-          way["building"](around:{radius},{lat},{lon});
-          relation["building"](around:{radius},{lat},{lon});
-        );
-        out center 20;
-        """
-        url = "https://overpass-api.de/api/interpreter"
-        response = requests.get(url, params={'data': query})
-
-        if response.ok:
-            data = response.json()
-            elements = data.get("elements", [])
-            st.markdown(f"🏘️ พบอาคาร {len(elements)} รายการภายใน {radius/1000:.1f} กม.")
-            named_places = [
-                (e.get('tags', {}).get('name'), e.get('lat') or e.get('center', {}).get('lat'), e.get('lon') or e.get('center', {}).get('lon'))
-                for e in elements if 'name' in e.get('tags', {})
-            ]
-            if named_places:
-                st.markdown("### 📌 รายชื่ออาคาร (ที่มีชื่อกำกับ):")
-                for name, lat_p, lon_p in named_places[:10]:
-                    st.markdown(f"- **{name}** (lat: {lat_p:.5f}, lon: {lon_p:.5f})")
+                st.success(f"✅ พบอาคารที่มีชื่อ {len(named_places)} แห่งในรัศมี 5 กม.")
+                if named_places:
+                    for name, lat_p, lon_p in named_places[:10]:
+                        st.markdown(f"- 📌 **{name}** (lat: {lat_p:.5f}, lon: {lon_p:.5f})")
+                else:
+                    st.info("ไม่พบอาคารที่มีชื่อในพื้นที่นี้")
             else:
-                st.info("🔍 ไม่พบชื่ออาคารในพื้นที่นี้ (มีอาคารแต่ไม่มี tag ชื่อ)")
+                st.error("❌ ไม่สามารถดึงข้อมูลจาก Overpass API ได้")
         else:
-            st.error("❌ ไม่สามารถเชื่อมต่อกับ Overpass API ได้ กรุณาลองใหม่ภายหลัง")
+            st.warning("⚠️ ไม่พบพิกัดจากชื่อพื้นที่ที่กรอก กรุณาลองเปลี่ยนคำใหม่")
+
