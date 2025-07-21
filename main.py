@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import requests
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.multioutput import MultiOutputRegressor
 from sklearn.model_selection import train_test_split
