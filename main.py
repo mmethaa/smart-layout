@@ -172,14 +172,19 @@ if submitted:
 with st.expander("🔎 ค้นหาโครงการรอบข้าง (ทดลองใช้งาน)"):
     st.markdown("### 🗺️ คลิกเลือกพื้นที่บนแผนที่เพื่อค้นหาอาคารโดยรอบ")
 
+    import folium
+    from streamlit_folium import st_folium
+    import requests
+
     default_lat, default_lon = 13.7563, 100.5018
     m = folium.Map(location=[default_lat, default_lon], zoom_start=13)
-    location_data = st_folium(m, height=500, width=700)
+    folium.Marker([default_lat, default_lon], tooltip="เริ่มต้นที่นี่").add_to(m)
+    map_data = st_folium(m, height=500, width=700)
 
-    if location_data.get("last_clicked"):
-        lat = location_data["last_clicked"]["lat"]
-        lon = location_data["last_clicked"]["lng"]
-        st.success(f"คุณเลือกพิกัด: {lat:.5f}, {lon:.5f}")
+    if map_data.get("last_clicked"):
+        lat = map_data["last_clicked"]["lat"]
+        lon = map_data["last_clicked"]["lng"]
+        st.success(f"📍 พิกัดที่เลือก: {lat:.5f}, {lon:.5f}")
 
         radius = 5000
         query = f"""
@@ -197,15 +202,16 @@ with st.expander("🔎 ค้นหาโครงการรอบข้าง
         if response.ok:
             data = response.json()
             elements = data.get("elements", [])
-            st.markdown(f"พบอาคารใกล้เคียง {len(elements)} รายการในรัศมี {radius/1000:.1f} กม.")
+            st.markdown(f"🏘️ พบอาคาร {len(elements)} รายการภายใน {radius/1000:.1f} กม.")
             named_places = [
                 (e.get('tags', {}).get('name'), e.get('lat') or e.get('center', {}).get('lat'), e.get('lon') or e.get('center', {}).get('lon'))
                 for e in elements if 'name' in e.get('tags', {})
             ]
             if named_places:
+                st.markdown("### 📌 รายชื่ออาคาร (ที่มีชื่อกำกับ):")
                 for name, lat_p, lon_p in named_places[:10]:
-                    st.markdown(f"- 📌 **{name}** (lat: {lat_p:.5f}, lon: {lon_p:.5f})")
+                    st.markdown(f"- **{name}** (lat: {lat_p:.5f}, lon: {lon_p:.5f})")
             else:
-                st.info("🔍 ไม่พบชื่อโครงการที่มีในแผนที่")
+                st.info("🔍 ไม่พบชื่ออาคารในพื้นที่นี้ (มีอาคารแต่ไม่มี tag ชื่อ)")
         else:
-            st.error("ไม่สามารถดึงข้อมูลจาก OpenStreetMap ได้ กรุณาลองใหม่")
+            st.error("❌ ไม่สามารถเชื่อมต่อกับ Overpass API ได้ กรุณาลองใหม่ภายหลัง")
