@@ -2,4 +2,5 @@ streamlit
 pandas
 scikit-learn
 openpyxl
-pip install streamlit folium streamlit-folium
+folium
+streamlit-folium
