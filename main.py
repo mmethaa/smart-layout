@@ -129,9 +129,12 @@ if submitted:
     หลังรวม = pred[3] * rai
 
     ratio_hist = get_ratio_from_lookup(เกรด, area)
-    if ratio_hist:
+    # แก้ไข: ตรวจสอบอย่างชัดเจนว่า ratio_hist ไม่ใช่ None ก่อนนำไปใช้งาน
+    if ratio_hist is not None:
         ทาวโฮม, บ้านแฝด, บ้านเดี่ยว, อาคารพาณิชย์ = [หลังรวม * r for r in ratio_hist]
     else:
+        # หากไม่พบข้อมูลใน lookup table หรือมีปัญหาในการดึงข้อมูล ให้ใช้ค่าจากโมเดลโดยตรง
+        # และปรับตาม policy ที่กำหนดไว้
         total = sum(pred[4:8]) or 1
         raw_ratios = [r / total for r in pred[4:8]]
         raw_ratios = adjust_by_grade_policy(เกรด, raw_ratios)
