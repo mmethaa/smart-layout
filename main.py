@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.multioutput import MultiOutputRegressor
-from sklearn.model_selection import train_test_split # Import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
 
 st.set_page_config(page_title="Smart Layout AI", page_icon="🏗️", layout="centered")
@@ -35,7 +35,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-df = pd.read_excel("layoutdata.xlsx")
+df = pd.read_excel("datalayout.xlsx")
 df.columns = df.columns.str.strip()
 df['หลังต่อซอย'] = df['จำนวนหลัง'] / df['จำนวนซอย'].replace(0, 1)
 df['%บ้านเดี่ยว'] = df['บ้านเดี่ยว'] / df['จำนวนหลัง'].replace(0, 1)
@@ -62,8 +62,6 @@ y_ratio = pd.DataFrame({
 })
 
 X = pd.get_dummies(X_raw, columns=['จังหวัด', 'เกรดโครงการ', 'รูปร่างที่ดิน'])
-
-# แก้ไขตรงนี้: เก็บ X_test และ y_test ไว้เพื่อการประเมิน
 X_train, X_test, y_train, y_test = train_test_split(X, y_ratio, test_size=0.2, random_state=42)
 model = MultiOutputRegressor(RandomForestRegressor(n_estimators=100, random_state=42)).fit(X_train, y_train)
 avg_ซอยต่อหลัง = df.groupby('เกรดโครงการ')['หลังต่อซอย'].mean().to_dict()
@@ -81,28 +79,24 @@ grouped_ratio = df_group.groupby(['เกรดโครงการ', 'กล�
 grouped_ratio_dict = grouped_ratio.to_dict(orient="index")
 
 def adjust_by_grade_policy(grade, ratios):
+    # Existing policy for PRIMO, BELLA, WATTANALAI
     if grade in ['PRIMO', 'BELLA', 'WATTANALAI']:
-        ratios[2] = min(ratios[2], 0.2)
-        remain = 1 - ratios[2] - ratios[3]
-        ratios[0] = remain * 0.65
-        ratios[1] = remain * 0.35
-    return ratios
+        ratios[2] = min(ratios[2], 0.2) # Max 20% detached (บ้านเดี่ยว)
+        remain = 1 - ratios[2] - ratios[3] # Recalculate remaining for townhome/semi-detached
+        ratios[0] = remain * 0.65 # ทาวโฮม (Index 0)
+        ratios[1] = remain * 0.35 # บ้านแฝด (Index 1)
 
-def get_ratio_from_lookup(grade, area):
-    group = labels[-1]
-    for i, b in enumerate(bins[:-1]):
-        if b < area <= bins[i+1]:
-            group = labels[i]
-            break
-    ratio = grouped_ratio_dict.get((grade, group))
-    if ratio and any(pd.notna(list(ratio.values()))):
-        total = sum([v for v in ratio.values() if pd.notna(v)]) or 1
-        ratios = [ratio.get('%ทาวโฮม', 0)/total,
-                  ratio.get('%บ้านแฝด', 0)/total,
-                  ratio.get('%บ้านเดี่ยว', 0)/total,
-                  ratio.get('%อาคารพาณิชย์', 0)/total]
-        return adjust_by_grade_policy(grade, ratios)
-    return None
+    # NEW POLICY: For grades that should only have detached houses (townhome, semi-detached, commercial are 0)
+    # Based on data analysis, grades like MONTARA, PRIMAVILLA, and some PARKVILLE instances
+    # tend to be exclusively detached. This enforces that policy.
+    # 'PARKVILLE' and 'PARK VILLE' are treated as the same grade for this policy.
+    if grade in ['MONTARA', 'PRIMAVILLA', 'PARKVILLE', 'PARK VILLE']:
+        ratios[0] = 0.0  # Townhome
+        ratios[1] = 0.0  # Semi-detached
+        ratios[3] = 0.0  # Commercial
+        ratios[2] = 1.0  # Detached - set to 100% of remaining plots if other types are 0
+
+    return ratios
 
 # ====== FORM ======
 st.markdown("## 📋 กรอกข้อมูลโครงการ")
@@ -131,7 +125,7 @@ if submitted:
     พท_สาธา = pred[0] * area
     พท_ขาย = pred[1] * area
     พท_สวน = pred[2] * area
-    พท_ถนน = พท_สาธา * ถนน_ต่อ_สาธารณะ_เฉลี่ย  # ✅ ใช้สัดส่วนจากข้อมูลอดีต
+    พท_ถนน = พท_สาธา * ถนน_ต่อ_สาธารณะ_เฉลี่ย
     หลังรวม = pred[3] * rai
 
     ratio_hist = get_ratio_from_lookup(เกรด, area)
@@ -165,7 +159,6 @@ if submitted:
         - อาคารพาณิชย์: **{อาคารพาณิชย์:,.0f}** หลัง  
     """)
 
-    # ส่วนที่แก้ไข: คำนวณ MAE และ R² บนชุดข้อมูล Test
     y_pred_test = model.predict(X_test)
     mae_test = mean_absolute_error(y_test, y_pred_test)
     r2_test = r2_score(y_test, y_pred_test)
@@ -173,15 +166,6 @@ if submitted:
     st.markdown("### 📈 ความแม่นยำของโมเดล (Test Set)")
     st.write(f"**MAE (Mean Absolute Error):** {mae_test:.4f}")
     st.write(f"**R² Score:** {r2_test:.4f}")
-
-    # (Optional) หากต้องการเปรียบเทียบกับ Train Set ด้วย
-    # y_pred_train = model.predict(X_train)
-    # mae_train = mean_absolute_error(y_train, y_pred_train)
-    # r2_train = r2_score(y_train, y_pred_train)
-    # st.markdown("### 📈 ความแม่นยำของโมเดล (Train Set - สำหรับเปรียบเทียบ Overfitting)")
-    # st.write(f"**MAE (Mean Absolute Error):** {mae_train:.4f}")
-    # st.write(f"**R² Score:** {r2_train:.4f}")
-
 
 st.markdown("---")
 st.caption("Developed by mmethaa | Smart Layout AI 🚀")
